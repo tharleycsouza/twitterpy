@@ -1,0 +1,55 @@
+version: '3.7'
+
+services:
+
+  web:
+    image: python:3.7-buster
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: gunicorn twitterpy.wsgi:application --bind 0.0.0.0:8000
+    expose:
+      - 8000
+    environment:
+      #- SECRET_KEY=02t&3r1uc5gnxt@##3qne9zq)m1k)--8ix7e&hns9ss20+l5dq
+      - SQL_HOST=db
+    restart: always
+    links:
+      - db
+    depends_on:
+      - db
+
+  db:
+    image: postgres:10
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/pgsql/data
+    environment:
+      - POSTGRES_USER=twitterpy
+      - POSTGRES_PASSWORD=twitterpy
+      - POSTGRES_DB=twitterpy
+
+  nginx:
+    image: nginx:latest
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    volumes:
+      - static_volume:/usr/src/twitterpy/static
+    ports:
+      - 80:80
+    hostname: dev-twitterpy.local
+    links:
+      - web
+    depends_on:
+      - web
+    dns:
+      - 127.0.0.1
+    dns_search: localhost
+
+volumes:
+  static_volume:
+  postgres_data:
