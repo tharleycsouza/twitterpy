@@ -5,6 +5,8 @@ provider "aws" {
   version = "~> 2.31.0"
 }
 
+#allows access to the list of AWS Availability
+
 data "aws_availability_zones" "all" {
   state = "available"
 }
@@ -14,6 +16,7 @@ data "aws_vpc" "default"{
 data "aws_subnet_ids" "default" {
   vpc_id = data.aws_vpc.default.id
 }
+
 #VARIABLES
 variable "server_port" {
   description = "The port the server will use for HTTP requests"
@@ -35,9 +38,6 @@ variable "asg_max" {
   type        = number
   default     = 10
 }
-#S3
-data "aws_elb_service_account" "main" {}
-
 
 #LOAD BALANCER
 resource "aws_lb" "twitterpy" {
@@ -170,8 +170,8 @@ output "alb_dns_name" {
   description = "Domain name"
 }
 
-resource "aws_iam_role" "EC2InstanceRole" {
-  name = "EC2InstanceRole"
+resource "aws_iam_role" "EC2InstanceRole1" {
+  name = "EC2InstanceRole1"
 
   assume_role_policy = <<EOF
 {
@@ -190,6 +190,24 @@ resource "aws_iam_role" "EC2InstanceRole" {
 EOF
 
   tags = {
-      tag-key = "tag-value"
+      tag-key = "prod"
+  }
+}
+
+resource "aws_db_instance" "default" {
+  allocated_storage = var.allocated_storage
+  max_allocated_storage = var.max_allocated_storage
+  storage_type = var.storage_type
+  ami = "ami-051f75c6"
+  engine = var.engine
+  engine_version = var.engine_version
+  instance_class = var.instance_class
+  name = var.name
+  username = var.username
+  password = var.password
+  parameter_group_name = var.parameter_group_name
+
+    lifecycle {
+    create_before_destroy = true
   }
 }
