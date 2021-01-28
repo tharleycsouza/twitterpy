@@ -109,6 +109,11 @@ resource "aws_launch_configuration" "twitterpy" {
   lifecycle {
     create_before_destroy = true
   }
+
+  tags = {
+    Name = "twitterpy"
+  }
+
 }
 resource "aws_autoscaling_group" "twitterpy" {
   launch_configuration = aws_launch_configuration.twitterpy.id
@@ -194,20 +199,43 @@ EOF
   }
 }
 
-resource "aws_db_instance" "default" {
-  allocated_storage = var.allocated_storage
-  max_allocated_storage = var.max_allocated_storage
-  storage_type = var.storage_type
-  ami = "ami-051f75c6"
-  engine = var.engine
-  engine_version = var.engine_version
-  instance_class = var.instance_class
-  name = var.name
-  username = var.username
-  password = var.password
-  parameter_group_name = var.parameter_group_name
+resource "aws_rds_cluster_instance" "cluster_instances" {
+  count              = 2
+  identifier         = "twitterpy-cluster-rds-${count.index}"
+  cluster_identifier = aws_rds_cluster.default.id
+  instance_class     = "db.r4.large"
+  engine             = aws_rds_cluster.default.engine
+  engine_version     = aws_rds_cluster.default.engine_version
+}
 
-    lifecycle {
-    create_before_destroy = true
+resource "aws_rds_cluster" "default" {
+  cluster_identifier = "twitterpy-cluster-rds"
+  #availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  database_name      = var.name
+  master_username    = var.username
+  master_password    = var.password
+  #snapshot_identifier = "twitterpy"
+  skip_final_snapshot = false
+}
+
+resource "aws_codedeploy_deployment_config" "twitterpy" {
+  deployment_config_name = "twitterpy-deployment-config"
+
+  minimum_healthy_hosts {
+    type  = "HOST_COUNT"
+    value = 2
   }
+}
+
+resource "aws_codedeploy_deployment_group" "twitterpy" {
+  app_name               = aws_codedeploy_app.twitterpy.name
+  deployment_group_name  = "twitterpy"
+  service_role_arn       = aws_iam_role.foo_role.arn
+  deployment_config_name = aws_codedeploy_deployment_config.foo.id
+
+  ec2_tag_filter {
+    key   = "Name"
+    value = "twitterpy"
+  }
+
 }
