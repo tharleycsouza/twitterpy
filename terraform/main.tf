@@ -194,9 +194,6 @@ resource "aws_iam_role" "EC2InstanceRole1" {
 }
 EOF
 
-  tags = {
-      tag-key = "prod"
-  }
 }
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
@@ -216,26 +213,4 @@ resource "aws_rds_cluster" "default" {
   master_password    = var.password
   #snapshot_identifier = "twitterpy"
   skip_final_snapshot = false
-}
-
-resource "aws_codedeploy_deployment_config" "twitterpy" {
-  deployment_config_name = "twitterpy-deployment-config"
-
-  minimum_healthy_hosts {
-    type  = "HOST_COUNT"
-    value = 2
-  }
-}
-
-resource "aws_codedeploy_deployment_group" "twitterpy" {
-  app_name               = aws_codedeploy_app.twitterpy.name
-  deployment_group_name  = "twitterpy"
-  service_role_arn       = aws_iam_role.foo_role.arn
-  deployment_config_name = aws_codedeploy_deployment_config.foo.id
-
-  ec2_tag_filter {
-    key   = "Name"
-    value = "twitterpy"
-  }
-
 }
